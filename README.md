@@ -18,9 +18,13 @@ Includes a ticker tape to show weather in more detail.
 
 <img width="1648" height="355" alt="image" src="https://github.com/user-attachments/assets/7b89b1aa-27a3-4b9c-81ed-96657cfa706b" />
 
-There are three skins to choose from (Default, Torn, Black and White)
+There are three colour schemes to choose from (Default, Torn, Black and White)
 
 <img width="1888" height="405" alt="image" src="https://github.com/user-attachments/assets/6d11d6e9-c3fb-401f-9f50-03ffabb2c861" />
+
+With a full twenty four hour visual cycle.
+
+<img width="1657" height="345" alt="Screenshot 2026-04-23 21 41 43" src="https://github.com/user-attachments/assets/1fe268b5-b618-4539-a62e-bcf9111c69f5" />
 
 It can be minimised so as to not take up as much screen real estate.
 
