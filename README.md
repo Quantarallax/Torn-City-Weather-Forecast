@@ -3,6 +3,11 @@ Shows current weather and seven day forecast for Torn City on your profile page.
 
 If flying abroad, it will show weather for the destination.
 
+Toggle for different settings.
+* Temperature Scale
+* Position
+* Colour Scheme
+
 <img width="350" height="312" alt="image" src="https://github.com/user-attachments/assets/c80236c5-f8e2-4f4c-a627-029a686dbb4a" />
 
 It is positioned either at the top of the screen, or to left in the sidebar.
