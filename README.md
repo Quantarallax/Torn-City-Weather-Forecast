@@ -1,4 +1,4 @@
-# Torn-City-Weather-Forecast
+# Torn City Weather Forecast
 Shows current weather and seven day forecast for Torn City on your profile page. It is on the one page as I didn't want it to affect gameplay, so it's location is kept to a minimum.
 
 If flying abroad, it will show weather for the destination.
