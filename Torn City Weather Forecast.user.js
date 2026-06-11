@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN CITY Weather Forecast
 // @namespace    sanxion.tc.weatherforecast
-// @version      1.16.0
+// @version      1.17.0
 // @description  Weather forecast for Torn City. 7-day outlook, colour schemes, hover tooltips, random ticker narration, robust sidebar detection.
 // @author       Sanxion [2987640]
 // @match        https://www.torn.com/profiles.php*
@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 /*
- * Weather Forecast  v1.16.0
+ * Weather Forecast  v1.17.0
  * ---------------------------------------------------------------------------
  * Weather data: public API, no key required.
  * Refreshes every 30 minutes.
@@ -48,7 +48,7 @@
   var STYLES_ID = 'tc-rtw-styles';
   var POPUP_ID = 'tc-rtw-popup';
   var REFRESH_MS = 30 * 60 * 1000;
-  var VERSION = '1.16.0';
+  var VERSION = '1.17.0';
 
   var DAYS = [
     'Sunday', 'Monday', 'Tuesday', 'Wednesday',
@@ -131,6 +131,7 @@
   var _cachedLocation = null;
   var _forcedTop = false;
   var _resizeTimer = null;
+  var _usingDummyData = false;
 
   // =========================================================================
   // LOCATION DETECTION
@@ -790,6 +791,7 @@
     // ================================================================
     // LOADING / ERROR
     // ================================================================
+    css += '.tcw-dummy-dot{width:5px;height:5px;background:#cc2020;border-radius:50%;flex-shrink:0;opacity:0.55;margin-right:2px;cursor:default;}';
     css += '.tcw-loading{padding:14px;text-align:center;font-family:"Share Tech Mono",monospace;font-size:10px;color:rgba(255,255,255,.68);}';
     css += '.tcw-loading b{display:block;color:#00d4ff;font-size:11px;margin-bottom:4px;}';
 
@@ -972,6 +974,9 @@
     html += '<div class="tcw-hdr">';
     html += '<div class="tcw-title" title="Weather Forecast - 7-day outlook">Weather Forecast' + locSmall + '</div>';
     html += '<div class="tcw-hdr-r">';
+    if (_usingDummyData) {
+      html += '<div class="tcw-dummy-dot" title="Using estimated forecast data"></div>';
+    }
     html += '<div class="tcw-clock" id="tcw-clock" title="Current Torn City Time (TCT)">' + clockHTML(lightSky) + '</div>';
     html += '<button class="tcw-hbtn" id="tcw-minimise" title="Minimise / Restore">' + minLabel + '</button>';
     html += '<button class="tcw-hbtn' + gearActive + '" id="tcw-gear" title="Open settings">&#9881;</button>';
@@ -1346,10 +1351,86 @@
     return html;
   }
 
+  // =========================================================================
+  // DUMMY DATA GENERATOR
+  // Produces plausible 7-day data when the API is unavailable.
+  // Climatologically appropriate for source coordinates (warm, dry region).
+  // Structure matches the real API response so buildWidget works unchanged.
+  // =========================================================================
+
+  function generateDummyData() {
+    var now = new Date();
+    var month = now.getUTCMonth();
+    // Approximate monthly high-temperature base for source coordinates
+    var monthlyBase = [17, 18, 21, 25, 29, 32, 33, 33, 31, 28, 23, 18];
+    var baseTemp = monthlyBase[month] + Math.round(Math.random() * 4 - 2);
+    var clearCodes = [0, 0, 0, 1, 1, 1, 2, 2, 3];
+    var daily = {
+      time: [], weathercode: [], temperature_2m_max: [], temperature_2m_min: [],
+      sunrise: [], sunset: [], precipitation_sum: [], windspeed_10m_max: [],
+      uv_index_max: [], precipitation_probability_max: []
+    };
+    var hourly = {
+      time: [], temperature_2m: [], relativehumidity_2m: [], apparent_temperature: [],
+      precipitation_probability: [], weathercode: [], windspeed_10m: [], winddirection_10m: []
+    };
+    var i, j, d, dStr, wmo, hi, lo, tempFrac, temp, hr;
+    for (i = 0; i < 7; i++) {
+      d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + i));
+      dStr = d.getUTCFullYear() + '-' + pad2(d.getUTCMonth() + 1) + '-' + pad2(d.getUTCDate());
+      wmo = clearCodes[Math.floor(Math.random() * clearCodes.length)];
+      hi = baseTemp + Math.round(Math.random() * 5 - 1);
+      lo = hi - 7 - Math.round(Math.random() * 4);
+      daily.time.push(dStr);
+      daily.weathercode.push(wmo);
+      daily.temperature_2m_max.push(hi);
+      daily.temperature_2m_min.push(lo);
+      daily.sunrise.push(dStr + 'T05:' + pad2(40 + Math.round(Math.random() * 20)) + ':00');
+      daily.sunset.push(dStr + 'T19:' + pad2(25 + Math.round(Math.random() * 25)) + ':00');
+      daily.precipitation_sum.push(0);
+      daily.windspeed_10m_max.push(8 + Math.round(Math.random() * 18));
+      daily.uv_index_max.push(wmo >= 3 ? (3 + Math.round(Math.random() * 3)) : (6 + Math.round(Math.random() * 4)));
+      daily.precipitation_probability_max.push(Math.round(Math.random() * 15));
+      for (j = 0; j < 24; j++) {
+        hourly.time.push(dStr + 'T' + pad2(j) + ':00');
+        hr = j;
+        if (hr < 6) {
+          tempFrac = hr * (1 / 12);
+        } else if (hr < 14) {
+          tempFrac = 0.5 + (hr - 6) * (0.5 / 8);
+        } else if (hr < 20) {
+          tempFrac = 1.0 - (hr - 14) * (0.7 / 6);
+        } else {
+          tempFrac = Math.max(0, 0.3 - (hr - 20) * 0.08);
+        }
+        temp = lo + (hi - lo) * Math.min(1, Math.max(0, tempFrac));
+        hourly.temperature_2m.push(parseFloat(temp.toFixed(1)));
+        hourly.relativehumidity_2m.push(50 + Math.round(Math.random() * 30));
+        hourly.apparent_temperature.push(parseFloat((temp - 1 + Math.random() * 2).toFixed(1)));
+        hourly.precipitation_probability.push(Math.round(Math.random() * 10));
+        hourly.weathercode.push(wmo);
+        hourly.windspeed_10m.push(parseFloat((5 + Math.random() * 15).toFixed(1)));
+        hourly.winddirection_10m.push(Math.round(Math.random() * 360));
+      }
+    }
+    var curHourIdx = now.getUTCHours();
+    return {
+      current_weather: {
+        weathercode: daily.weathercode[0],
+        temperature: hourly.temperature_2m[curHourIdx],
+        windspeed: hourly.windspeed_10m[curHourIdx]
+      },
+      hourly: hourly,
+      daily: daily
+    };
+  }
+
   function errorHTML() {
     return '<div class="tcw-loading" style="color:rgba(255,140,100,.85);">' +
       '<b style="color:#ff8060;">Satellite link lost</b>' +
-      'Unable to receive satellite data. Retrying on next refresh.' +
+      'Unable to receive satellite data. ' +
+      '<a href="#" id="tcw-retry-dummy" style="color:#00d4ff;text-decoration:underline;cursor:pointer;">' +
+      'Continue with forecast data</a>' +
       '</div>';
   }
 
@@ -1413,6 +1494,7 @@
     fetchWeather(location.lat, location.lon).then(function (data) {
       _cachedData = data;
       _cachedLocation = location;
+      _usingDummyData = false;
       var fresh = document.getElementById(WIDGET_ID);
       if (!fresh) { return; }
       fresh.innerHTML = buildWidget(data, location, unit, _forcedTop ? 'top' : effectivePos);
@@ -1423,10 +1505,34 @@
       console.error('[TC Weather] Fetch failed:', err);
       var fresh = document.getElementById(WIDGET_ID);
       if (!fresh) { return; }
+      // If we already have cached data (real or dummy), re-render silently
+      if (_cachedData) {
+        fresh.innerHTML = buildWidget(_cachedData, _cachedLocation, unit, _forcedTop ? 'top' : effectivePos);
+        applyState();
+        attachHandlers();
+        syncSkyContrast();
+        return;
+      }
+      // No cached data - show error with option to load dummy data
       var hdr = fresh.querySelector('.tcw-hdr');
       fresh.innerHTML = (hdr ? hdr.outerHTML : loadingHTML(abroadLabel)) +
         '<div class="tcw-main">' + errorHTML() + '</div>';
       attachHandlers();
+      var retryLink = document.getElementById('tcw-retry-dummy');
+      if (retryLink) {
+        retryLink.addEventListener('click', function (e) {
+          e.preventDefault();
+          _cachedData = generateDummyData();
+          _cachedLocation = location;
+          _usingDummyData = true;
+          var w = document.getElementById(WIDGET_ID);
+          if (!w) { return; }
+          w.innerHTML = buildWidget(_cachedData, _cachedLocation, unit, _forcedTop ? 'top' : effectivePos);
+          applyState();
+          attachHandlers();
+          syncSkyContrast();
+        });
+      }
     });
   }
 
