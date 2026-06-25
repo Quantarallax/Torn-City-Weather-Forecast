@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         TORN CITY Weather Forecast
 // @namespace    sanxion.tc.weatherforecast
-// @version      1.17.0
+// @version      1.18.0
 // @description  Weather forecast for Torn City. 7-day outlook, colour schemes, hover tooltips, random ticker narration, robust sidebar detection.
 // @author       Sanxion [2987640]
 // @match        https://www.torn.com/profiles.php*
@@ -15,7 +15,7 @@
 // ==/UserScript==
 
 /*
- * Weather Forecast  v1.17.0
+ * Weather Forecast  v1.18.0
  * ---------------------------------------------------------------------------
  * Weather data: public API, no key required.
  * Refreshes every 30 minutes.
@@ -48,7 +48,7 @@
   var STYLES_ID = 'tc-rtw-styles';
   var POPUP_ID = 'tc-rtw-popup';
   var REFRESH_MS = 30 * 60 * 1000;
-  var VERSION = '1.17.0';
+  var VERSION = '1.18.0';
 
   var DAYS = [
     'Sunday', 'Monday', 'Tuesday', 'Wednesday',
@@ -831,6 +831,7 @@
     html += '<div class="tcw-credits">';
     html += '<p>Today\'s Weatherwoman is</p>';
     html += '<a href="https://www.torn.com/profiles.php?XID=2987640" target="_blank" rel="noopener">Sanxion [2987640]</a>';
+    html += '<a href="https://greasyfork.org/en/users/1593713-quantarallax?sort=total_installs" target="_blank" rel="noopener" style="display:block;margin-top:4px;font-size:10px;font-weight:400;">Sanxion's Other Scripts</a>';
     html += '</div>';
 
     if (compact) {
